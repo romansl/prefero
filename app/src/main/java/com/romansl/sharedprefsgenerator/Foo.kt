@@ -3,22 +3,24 @@ package com.romansl.sharedprefsgenerator
 import com.romansl.prefs.*
 
 @Preferences
-interface Prefs1 {
+interface Foo {
     @get:DefaultInt(111)
-    val aaa1: Int
+    val someInt: Int
 
     @get:DefaultLong(222L)
-    val bbb1: Long
+    val someLong: Long
 
     @get:DefaultString("hello")
-    val ccc1: String
+    val someHello: String
+
     @get:Key("replacedKey")
-    val ccc2: String
-    val ccc3: String?
+    val someKey: String
+
+    val someNullable: String?
 
     @get:DefaultBoolean(true)
-    val ddd1: Boolean
+    val someBoolean: Boolean
 
     @get:DefaultFloat(0.5f)
-    val eee1: Float
+    val someFloat: Float
 }
