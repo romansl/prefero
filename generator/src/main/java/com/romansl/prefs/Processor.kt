@@ -46,12 +46,13 @@ class Processor : AbstractProcessor() {
                                 val propertyType = makePropertyType(it)
                                 val editorTypeName = makeEditorTypeName(propertyType, it)
                                 val name = makePropertyName(it)
+                                val keyName = makeKeyName(it, name)
                                 addProperty(PropertySpec.builder(name, propertyType, KModifier.OVERRIDE)
                                         .mutable(true)
-                                        .getter(FunSpec.getterBuilder().addCode("return this@${className.simpleName()}.$name\n", name).build())
+                                        .getter(FunSpec.getterBuilder().addCode("return this@${className.simpleName()}.$name\n").build())
                                         .setter(FunSpec.setterBuilder()
                                                 .addParameter("value", propertyType)
-                                                .addCode("editor.put$editorTypeName(%S, value)\n", name)
+                                                .addCode("editor.put$editorTypeName(%S, value)\n", keyName)
                                                 .build())
                                         .build())
                             }
@@ -72,9 +73,10 @@ class Processor : AbstractProcessor() {
                                 val propertyType = makePropertyType(it)
                                 val editorTypeName = makeEditorTypeName(propertyType, it)
                                 val name = makePropertyName(it)
-                                val default = makeDefaultValue(it, propertyType.asNonNullable())
+                                val keyName = makeKeyName(it, name)
+                                val default = makeDefaultValue(it, propertyType)
                                 addProperty(PropertySpec.builder(name, propertyType, KModifier.OVERRIDE)
-                                        .getter(FunSpec.getterBuilder().addCode("return pref.get$editorTypeName(%S, $default)\n", name).build())
+                                        .getter(FunSpec.getterBuilder().addCode("return pref.get$editorTypeName(%S, $default)\n", keyName).build())
                                         .build())
                             }
                         }
@@ -99,6 +101,10 @@ class Processor : AbstractProcessor() {
         }
 
         return true
+    }
+
+    private fun makeKeyName(element: ExecutableElement, name: String): String {
+        return element.getAnnotation(Key::class.java)?.name ?: name
     }
 
     private fun makeDefaultValue(it: ExecutableElement, propertyType: TypeName): Any {
@@ -136,6 +142,7 @@ class Processor : AbstractProcessor() {
             INT -> "0"
             LONG -> "0L"
             STRING -> "\"\""
+            STRING_NULLABLE -> "null"
             BOOLEAN -> "false"
             FLOAT -> "0f"
             else -> throw IllegalArgumentException("Illegal type " + propertyType.toString())
@@ -216,6 +223,7 @@ class Processor : AbstractProcessor() {
         private val spName = ClassName.get("android.content", "SharedPreferences")
         private val spEditor = ClassName.get("android.content", "SharedPreferences.Editor")
         private val STRING = ClassName.get("kotlin", "String")
+        private val STRING_NULLABLE = STRING.asNullable()
     }
 
     class EditorBodyType : TypeName(false, emptyList()) {

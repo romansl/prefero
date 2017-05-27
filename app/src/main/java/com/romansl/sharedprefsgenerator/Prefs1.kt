@@ -12,7 +12,9 @@ interface Prefs1 {
 
     @get:DefaultString("hello")
     val ccc1: String
-    val ccc2: String?
+    @get:Key("replacedKey")
+    val ccc2: String
+    val ccc3: String?
 
     @get:DefaultBoolean(true)
     val ddd1: Boolean

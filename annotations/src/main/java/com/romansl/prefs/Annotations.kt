@@ -23,3 +23,7 @@ annotation class DefaultBoolean(val value: Boolean)
 @Target(AnnotationTarget.PROPERTY_GETTER)
 @Retention(AnnotationRetention.SOURCE)
 annotation class DefaultString(val value: String)
+
+@Target(AnnotationTarget.PROPERTY_GETTER)
+@Retention(AnnotationRetention.SOURCE)
+annotation class Key(val name: String)
