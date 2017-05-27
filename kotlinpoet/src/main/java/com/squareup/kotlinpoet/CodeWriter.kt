@@ -36,7 +36,7 @@ private fun extractMemberName(part: String): String {
  * Converts a [KotlinFile] to a string suitable to both human- and javac-consumption. This honors
  * imports, indentation, and deferred variable names.
  */
-internal class CodeWriter @JvmOverloads constructor(
+class CodeWriter @JvmOverloads constructor(
     out: Appendable,
     private val indent: String = "  ",
     private val memberImports: Set<String> = emptySet(),

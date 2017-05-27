@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable
 import java.lang.IllegalArgumentException
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
+import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
@@ -14,6 +15,8 @@ import javax.tools.StandardLocation
 @SupportedAnnotationTypes("com.romansl.prefs.Preferences")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 class Processor : AbstractProcessor() {
+    private var hasErrors = false
+
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
         // annotations почему-то содержат не нужные аннотации.
         roundEnv.getElementsAnnotatedWith(Preferences::class.java).forEach {
@@ -22,13 +25,41 @@ class Processor : AbstractProcessor() {
             val kind = it.kind
             if (kind == ElementKind.INTERFACE) {
                 //val fullClassName = (it as QualifiedNameable).qualifiedName.toString()
-                val methods = it.getEnclosedElements().filter { it.kind == ElementKind.METHOD && it.simpleName.length > 3 && it.simpleName.startsWith("get") }
+                val methods = it.getEnclosedElements().filter {
+                    it.kind == ElementKind.METHOD && it.simpleName.length > 3 && it.simpleName.startsWith("get")
+                }
                 val typeName = ClassName.get(it)
-
                 val className = ClassName.get(typeName.packageName(), "${typeName.simpleName()}Preferences")
 
+                val editorClass = TypeSpec.classBuilder("Editor")
+                        .addModifiers(KModifier.INNER)
+                        .addSuperinterface(typeName)
+                        .primaryConstructor(FunSpec.constructorBuilder()
+                                .addParameter("editor", spEditor)
+                                .build())
+                        .addProperty(PropertySpec.builder("editor", spEditor, KModifier.PRIVATE)
+                                .initializer("editor")
+                                .build())
+                        .apply {
+                            methods.forEach {
+                                it as ExecutableElement
+                                val propertyType = makePropertyType(it)
+                                val editorTypeName = makeEditorTypeName(propertyType, it)
+                                val name = makePropertyName(it)
+                                addProperty(PropertySpec.builder(name, propertyType, KModifier.OVERRIDE)
+                                        .mutable(true)
+                                        .getter(FunSpec.getterBuilder().addCode("return this@${className.simpleName()}.$name\n", name).build())
+                                        .setter(FunSpec.setterBuilder()
+                                                .addParameter("value", propertyType)
+                                                .addCode("editor.put$editorTypeName(%S, value)\n", name)
+                                                .build())
+                                        .build())
+                            }
+                        }
+                        .build()
+
                 val prefsClass = TypeSpec.classBuilder(className)
-                        .superclass(typeName)
+                        .addSuperinterface(typeName)
                         .primaryConstructor(FunSpec.constructorBuilder()
                                 .addParameter("preferences", spName)
                                 .build())
@@ -39,22 +70,31 @@ class Processor : AbstractProcessor() {
                             methods.forEach {
                                 it as ExecutableElement
                                 val propertyType = makePropertyType(it)
-                                val getterName = makeGetterName(propertyType)
+                                val editorTypeName = makeEditorTypeName(propertyType, it)
                                 val name = makePropertyName(it)
                                 val default = makeDefaultValue(it, propertyType.asNonNullable())
                                 addProperty(PropertySpec.builder(name, propertyType, KModifier.OVERRIDE)
-                                        .getter(FunSpec.getterBuilder().addCode("return pref.$getterName(%S, $default)\n", name).build())
+                                        .getter(FunSpec.getterBuilder().addCode("return pref.get$editorTypeName(%S, $default)\n", name).build())
                                         .build())
                             }
                         }
+                        .addType(editorClass)
+                        .addFun(FunSpec.builder("edit")
+                                .addParameter("body", EditorBodyType())
+                                .addCode("val editor = pref.edit()\n")
+                                .addCode("Editor(editor).body()\n")
+                                .addCode("editor.commit()\n")
+                                .build())
                         .build()
 
-                KotlinFile.builder(className.packageName(), className.simpleName())
-                        .addType(prefsClass)
-                        .build()
-                        .writeTo(processingEnv.filer)
+                if (!hasErrors) {
+                    KotlinFile.builder(className.packageName(), className.simpleName())
+                            .addType(prefsClass)
+                            .build()
+                            .writeTo(processingEnv.filer)
+                }
             } else {
-                error("The Preferences annotation can only be applied to interfaces.")
+                error("The Preferences annotation can only be applied to interfaces.", it)
             }
         }
 
@@ -112,16 +152,18 @@ class Processor : AbstractProcessor() {
         return name
     }
 
-    private fun makeGetterName(propertyType: TypeName): String {
-        val getter = when (propertyType.asNonNullable().toString()) {
-            "kotlin.Int" -> "getInt"
-            "kotlin.Long" -> "getLong"
-            "kotlin.Boolean" -> "getBoolean"
-            "kotlin.Float" -> "getFloat"
-            "kotlin.String" -> "getString"
-            else -> throw IllegalArgumentException("Illegal type " + propertyType.toString())
+    private fun makeEditorTypeName(propertyType: TypeName, element: Element): String {
+        return when (propertyType.asNonNullable().toString()) {
+            "kotlin.Int" -> "Int"
+            "kotlin.Long" -> "Long"
+            "kotlin.Boolean" -> "Boolean"
+            "kotlin.Float" -> "Float"
+            "kotlin.String" -> "String"
+            else -> {
+                error("This property can not be Nullable.", element)
+                ""
+            }
         }
-        return getter
     }
 
     private fun makePropertyType(element: ExecutableElement): TypeName {
@@ -136,7 +178,12 @@ class Processor : AbstractProcessor() {
         }
 
         return if (element.getAnnotation(Nullable::class.java) != null) {
-            propertyType.asNullable()
+            if (propertyType == STRING) {
+                propertyType.asNullable()
+            } else {
+                error("This property can not be Nullable.", element)
+                propertyType
+            }
         } else {
             propertyType
         }
@@ -146,8 +193,9 @@ class Processor : AbstractProcessor() {
         processingEnv.messager.printMessage(Diagnostic.Kind.NOTE, message)
     }
 
-    private fun error(message: String) {
-        processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, message)
+    private fun error(message: String, element: Element) {
+        hasErrors = true
+        processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, message, element)
     }
 
     private fun KotlinFile.writeTo(filer: Filer) {
@@ -166,7 +214,31 @@ class Processor : AbstractProcessor() {
 
     companion object {
         private val spName = ClassName.get("android.content", "SharedPreferences")
+        private val spEditor = ClassName.get("android.content", "SharedPreferences.Editor")
         private val STRING = ClassName.get("kotlin", "String")
+    }
+
+    class EditorBodyType : TypeName(false, emptyList()) {
+        override fun asNullable(): TypeName {
+            return this
+        }
+
+        override fun asNonNullable(): TypeName {
+            return this
+        }
+
+        override fun annotated(annotations: List<AnnotationSpec>): TypeName {
+            return this
+        }
+
+        override fun withoutAnnotations(): TypeName {
+            return this
+        }
+
+        override fun abstractEmit(out: CodeWriter): CodeWriter {
+            out.emitCode("Editor.() -> Unit")
+            return out
+        }
     }
 }
 

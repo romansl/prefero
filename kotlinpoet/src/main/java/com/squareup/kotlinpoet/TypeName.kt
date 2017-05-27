@@ -51,7 +51,7 @@ import kotlin.reflect.KClass
  * types like `Set<Long>`, use the factory methods on [ParameterizedTypeName], [TypeVariableName],
  * and [WildcardTypeName].
  */
-abstract class TypeName internal constructor(
+abstract class TypeName constructor(
     val nullable: Boolean, annotations: List<AnnotationSpec>) {
   val annotations: List<AnnotationSpec> = annotations.toImmutableList()
 
@@ -96,7 +96,7 @@ abstract class TypeName internal constructor(
   }
 
   @Throws(IOException::class)
-  internal abstract fun abstractEmit(out: CodeWriter): CodeWriter
+  abstract fun abstractEmit(out: CodeWriter): CodeWriter
 
   // TODO(jwilson): once the calling site is Kotlin, rename abstractEmit to emit.
   @JvmName("emit") internal fun emit(out: CodeWriter) {
