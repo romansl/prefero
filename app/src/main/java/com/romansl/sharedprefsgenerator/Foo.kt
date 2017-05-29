@@ -20,6 +20,8 @@ interface Foo {
 
     @get:DefaultBoolean(true)
     val someBoolean: Boolean
+    val isBoolean: Boolean
+    val hasBoolean: Boolean
 
     @get:DefaultFloat(0.5f)
     val someFloat: Float

@@ -19,7 +19,9 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile project(':annotations')
-    compile project(':generator')
-    kapt files('../generator/build/libs/generator.jar')
+    //compile project(':annotations')
+    //compile project(':generator')
+    //kapt files('../generator/build/libs/generator.jar')
+    compile 'com.github.romansl.prefero:annotations:1.0'
+    kapt 'com.github.romansl.prefero:generator:1.0'
 }
