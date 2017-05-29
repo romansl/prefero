@@ -26,7 +26,7 @@ class Processor : AbstractProcessor() {
             if (kind == ElementKind.INTERFACE) {
                 //val fullClassName = (it as QualifiedNameable).qualifiedName.toString()
                 val properties = it.getEnclosedElements().filter {
-                    it.kind == ElementKind.METHOD && it.simpleName.length > 3 && it.simpleName.startsWith("get")
+                    it.kind == ElementKind.METHOD && (it.simpleName.startsWith("get") || it.simpleName.startsWith("is"))
                 }.map {
                     Property(it as ExecutableElement)
                 }
@@ -43,7 +43,7 @@ class Processor : AbstractProcessor() {
 
     private fun generateFile(it: TypeElement, properties: List<Property>) {
         val typeName = ClassName.get(it)
-        val className = ClassName.get(typeName.packageName(), "${typeName.simpleName()}Preferences")
+        val className = ClassName.get(typeName.packageName(), "${typeName.simpleName()}Impl")
 
         val editorClass = TypeSpec.classBuilder("Editor")
                 .addModifiers(KModifier.INNER)
@@ -51,7 +51,7 @@ class Processor : AbstractProcessor() {
                 .primaryConstructor(FunSpec.constructorBuilder()
                         .addParameter("editor", spEditor)
                         .build())
-                .addProperty(PropertySpec.builder("editor", spEditor, KModifier.PRIVATE)
+                .addProperty(PropertySpec.builder("editor", spEditor)
                         .initializer("editor")
                         .build())
                 .addProperties(properties.map {
@@ -73,7 +73,7 @@ class Processor : AbstractProcessor() {
                 .primaryConstructor(FunSpec.constructorBuilder()
                         .addParameter("preferences", spName)
                         .build())
-                .addProperty(PropertySpec.builder("pref", spName, KModifier.PRIVATE)
+                .addProperty(PropertySpec.builder("pref", spName)
                         .initializer("preferences")
                         .build())
                 .addProperties(properties.map {
@@ -128,6 +128,12 @@ class Processor : AbstractProcessor() {
         val keyName = makeKeyName(it, name)
         val default = makeDefaultValue(it, propertyType)
 
+        init {
+            if (it.simpleName.toString() == "is" || it.simpleName.toString() == "get") {
+                error("Wrong getter name.", it)
+            }
+        }
+
         private fun makeKeyName(element: ExecutableElement, name: String): String {
             return element.getAnnotation(Key::class.java)?.name ?: name
         }
@@ -177,7 +183,15 @@ class Processor : AbstractProcessor() {
         private fun makePropertyName(it: ExecutableElement): String {
             val name = run {
                 val n = it.simpleName.toString()
-                val sb = StringBuilder(n.substring(3))
+                val pos = if (n.startsWith("get")) {
+                    3
+                } else if (n.startsWith("is")) {
+                    0
+                } else {
+                    0
+                }
+
+                val sb = StringBuilder(n.substring(pos))
                 sb[0] = sb[0].toLowerCase()
                 sb.toString()
             }

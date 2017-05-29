@@ -23,5 +23,18 @@ dependencies {
     compile project(':kotlinpoet')
 }
 
+task fatJar(type: Jar) {
+    group 'build'
+    baseName = project.name + '-all'
+    from {
+        configurations.compile.filter {
+            it.toString().contains("kotlinpoet.jar")
+        }.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+}
+
 sourceCompatibility = "1.6"
 targetCompatibility = "1.6"
