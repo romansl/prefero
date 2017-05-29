@@ -1,0 +1,1 @@
+gradlew :app:compileDebugJavaWithJavac -Dorg.gradle.daemon=false

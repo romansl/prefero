@@ -7,3 +7,9 @@
 /build
 /captures
 .externalNativeBuild
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/runConfigurations.xml
+/.idea/compiler.xml
+/.idea/misc.xml
+/.idea/copyright/profiles_settings.xml
