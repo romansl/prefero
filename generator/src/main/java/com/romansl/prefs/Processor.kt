@@ -18,13 +18,13 @@ class Processor : AbstractProcessor() {
     private var hasErrors = false
 
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
-        // annotations почему-то содержат не нужные аннотации.
+        if (annotations.isEmpty())
+            return false
+
         roundEnv.getElementsAnnotatedWith(Preferences::class.java).forEach {
             it as TypeElement
-            //val simpleName = it.simpleName
             val kind = it.kind
             if (kind == ElementKind.INTERFACE) {
-                //val fullClassName = (it as QualifiedNameable).qualifiedName.toString()
                 val properties = it.getEnclosedElements().filter {
                     it.kind == ElementKind.METHOD && (it.simpleName.startsWith("get") || it.simpleName.startsWith("is"))
                 }.map {
@@ -96,10 +96,6 @@ class Processor : AbstractProcessor() {
                 .addType(prefsClass)
                 .build()
                 .writeTo(processingEnv.filer)
-    }
-
-    private fun note(message: String) {
-        processingEnv.messager.printMessage(Diagnostic.Kind.NOTE, message)
     }
 
     private fun error(message: String, element: Element) {
