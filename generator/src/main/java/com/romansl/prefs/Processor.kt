@@ -45,8 +45,8 @@ class Processor : AbstractProcessor() {
     }
 
     private fun generateFile(it: TypeElement, properties: List<Property>) {
-        val typeName = ClassName.get(it)
-        val className = ClassName.get(typeName.packageName(), "${typeName.simpleName()}Impl")
+        val typeName = it.asClassName()
+        val className = ClassName(typeName.packageName(), "${typeName.simpleName()}Impl")
 
         val editorClass = TypeSpec.classBuilder("Editor")
                 .addModifiers(KModifier.INNER)
@@ -76,26 +76,26 @@ class Processor : AbstractProcessor() {
                 .primaryConstructor(FunSpec.constructorBuilder()
                         .addParameter("preferences", spName)
                         .build())
-                .addProperty(PropertySpec.builder("pref", spName)
+                .addProperty(PropertySpec.builder("preferences", spName)
                         .initializer("preferences")
                         .build())
                 .addProperties(properties.map {
                     PropertySpec.builder(it.name, it.propertyType, KModifier.OVERRIDE)
                             .getter(FunSpec.getterBuilder()
-                                    .addCode("return pref.get${it.editorTypeName}(%S, ${it.default})\n", it.keyName)
+                                    .addCode("return preferences.get${it.editorTypeName}(%S, ${it.default})\n", it.keyName)
                                     .build())
                             .build()
                 })
                 .addType(editorClass)
-                .addFun(FunSpec.builder("edit")
-                        .addParameter("body", EditorBodyType())
-                        .addCode("val editor = pref.edit()\n")
+                .addFunction(FunSpec.builder("edit")
+                        .addParameter("body", LambdaTypeName.get(ClassName("", editorClass.name!!), emptyList(), UNIT))
+                        .addCode("val editor = preferences.edit()\n")
                         .addCode("Editor(editor).body()\n")
                         .addCode("editor.commit()\n")
                         .build())
                 .build()
 
-        KotlinFile.builder(className.packageName(), className.simpleName())
+        FileSpec.builder(className.packageName(), className.simpleName())
                 .addType(prefsClass)
                 .build()
                 .writeTo(processingEnv.filer)
@@ -106,9 +106,9 @@ class Processor : AbstractProcessor() {
         processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, message, element)
     }
 
-    private fun KotlinFile.writeTo(filer: Filer) {
+    private fun FileSpec.writeTo(filer: Filer) {
         val filerSourceFile = filer.createResource(StandardLocation.SOURCE_OUTPUT,
-                packageName, "$fileName.kt")
+                packageName, "$name.kt")
         try {
             filerSourceFile.openWriter().use { writer -> writeTo(writer) }
         } catch (e: Exception) {
@@ -190,21 +190,16 @@ class Processor : AbstractProcessor() {
         }
 
         private fun makePropertyName(it: ExecutableElement): String {
-            val name = run {
-                val n = it.simpleName.toString()
-                val pos = if (n.startsWith("get")) {
-                    3
-                } else if (n.startsWith("is")) {
-                    0
-                } else {
-                    0
-                }
-
-                val sb = StringBuilder(n.substring(pos))
-                sb[0] = sb[0].toLowerCase()
-                sb.toString()
+            val n = it.simpleName
+            val pos = when {
+                n.startsWith("get") -> 3
+                n.startsWith("is") -> 0
+                else -> 0
             }
-            return name
+
+            val sb = StringBuilder(n.substring(pos))
+            sb[0] = sb[0].toLowerCase()
+            return sb.toString()
         }
 
         private fun makeEditorTypeName(propertyType: TypeName, element: Element): String {
@@ -222,7 +217,7 @@ class Processor : AbstractProcessor() {
         }
 
         private fun makePropertyType(element: ExecutableElement): TypeName {
-            val type = TypeName.get(element.returnType)
+            val type = element.returnType.asTypeName()
             val propertyType = when (type.toString()) {
                 "java.lang.String" -> STRING
                 "java.lang.Integer" -> INT
@@ -246,33 +241,10 @@ class Processor : AbstractProcessor() {
     }
 
     companion object {
-        private val spName = ClassName.get("android.content", "SharedPreferences")
-        private val spEditor = ClassName.get("android.content", "SharedPreferences.Editor")
-        private val STRING = ClassName.get("kotlin", "String")
+        private val spName = ClassName("android.content", "SharedPreferences")
+        private val spEditor = ClassName("android.content", "SharedPreferences.Editor")
+        private val STRING = ClassName("kotlin", "String")
         private val STRING_NULLABLE = STRING.asNullable()
-    }
-
-    class EditorBodyType : TypeName(false, emptyList()) {
-        override fun asNullable(): TypeName {
-            return this
-        }
-
-        override fun asNonNullable(): TypeName {
-            return this
-        }
-
-        override fun annotated(annotations: List<AnnotationSpec>): TypeName {
-            return this
-        }
-
-        override fun withoutAnnotations(): TypeName {
-            return this
-        }
-
-        override fun abstractEmit(out: CodeWriter): CodeWriter {
-            out.emitCode("Editor.() -> Unit")
-            return out
-        }
     }
 }
 
