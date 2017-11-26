@@ -9,7 +9,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        FooPreferences(getSharedPreferences("hello", Context.MODE_PRIVATE)).edit {
+        FooImpl(getSharedPreferences("hello", Context.MODE_PRIVATE)).edit {
             someBoolean = true
             someFloat = 10f
             someHello = "hello1"

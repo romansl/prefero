@@ -25,10 +25,13 @@ class Processor : AbstractProcessor() {
             it as TypeElement
             val kind = it.kind
             if (kind == ElementKind.INTERFACE) {
+                val innerMetaClass = it.enclosedElements.firstOrNull {
+                    it.kind == ElementKind.CLASS && it.simpleName.contentEquals("DefaultImpls")
+                }
                 val properties = it.getEnclosedElements().filter {
                     it.kind == ElementKind.METHOD && (it.simpleName.startsWith("get") || it.simpleName.startsWith("is"))
                 }.map {
-                    Property(it as ExecutableElement)
+                    Property(it as ExecutableElement, innerMetaClass)
                 }
                 if (!hasErrors) {
                     generateFile(it, properties)
@@ -117,49 +120,59 @@ class Processor : AbstractProcessor() {
         }
     }
 
-    inner class Property(it: ExecutableElement) {
-        val propertyType = makePropertyType(it)
-        val editorTypeName = makeEditorTypeName(propertyType, it)
-        val name = makePropertyName(it)
-        val keyName = makeKeyName(it, name)
-        val default = makeDefaultValue(it, propertyType)
+    inner class Property(private val propertyElement: ExecutableElement, innerMetaClass: Element?) {
+        val propertyType = makePropertyType(propertyElement)
+        val editorTypeName = makeEditorTypeName(propertyType, propertyElement)
+        val name = makePropertyName(propertyElement)
+        private val innerMetaProperty = run {
+            val nameToFind = "$name\$annotations"
+            innerMetaClass?.enclosedElements?.firstOrNull {
+                it.kind == ElementKind.METHOD && it.simpleName.contentEquals(nameToFind)
+            }
+        }
+        val keyName = makeKeyName(name)
+        val default = makeDefaultValue(propertyType)
 
         init {
-            if (it.simpleName.toString() == "is" || it.simpleName.toString() == "get") {
-                error("Wrong getter name.", it)
+            if (propertyElement.simpleName.contentEquals("is") || propertyElement.simpleName.contentEquals("get")) {
+                error("Wrong getter name.", propertyElement)
             }
         }
 
-        private fun makeKeyName(element: ExecutableElement, name: String): String {
-            return element.getAnnotation(Key::class.java)?.name ?: name
+        private fun <A : Annotation> getAnnotation(annotationType: Class<A>): A? {
+            return propertyElement.getAnnotation(annotationType) ?: innerMetaProperty?.getAnnotation(annotationType)
         }
 
-        private fun makeDefaultValue(it: ExecutableElement, propertyType: TypeName): Any {
-            val defaultInt = it.getAnnotation(DefaultInt::class.java)
+        private fun makeKeyName(name: String): String {
+            return getAnnotation(Key::class.java)?.name ?: name
+        }
+
+        private fun makeDefaultValue(propertyType: TypeName): Any {
+            val defaultInt = getAnnotation(DefaultInt::class.java)
             if (defaultInt != null) {
                 require(propertyType == INT) { "Int required" }
                 return defaultInt.value
             }
 
-            val defaultLong = it.getAnnotation(DefaultLong::class.java)
+            val defaultLong = getAnnotation(DefaultLong::class.java)
             if (defaultLong != null) {
                 require(propertyType == LONG) { "Long required" }
                 return "" + defaultLong.value + "L"
             }
 
-            val defaultString = it.getAnnotation(DefaultString::class.java)
+            val defaultString = getAnnotation(DefaultString::class.java)
             if (defaultString != null) {
                 require(propertyType == STRING) { "String required" }
                 return "\"" + defaultString.value + "\""
             }
 
-            val defaultBool = it.getAnnotation(DefaultBoolean::class.java)
+            val defaultBool = getAnnotation(DefaultBoolean::class.java)
             if (defaultBool != null) {
                 require(propertyType == BOOLEAN) { "Boolean required" }
                 return defaultBool.value
             }
 
-            val defaultFloat = it.getAnnotation(DefaultFloat::class.java)
+            val defaultFloat = getAnnotation(DefaultFloat::class.java)
             if (defaultFloat != null) {
                 require(propertyType == FLOAT) { "Float required" }
                 return "" + defaultFloat.value + "f"

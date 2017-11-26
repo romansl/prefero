@@ -7,14 +7,14 @@ repositories {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
     //compile 'com.squareup:kotlinpoet:0.2.0'
-    compile project(':annotations')
+    implementation project(':annotations')
 }
 
-sourceCompatibility = "1.6"
-targetCompatibility = "1.6"
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
