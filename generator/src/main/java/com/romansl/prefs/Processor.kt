@@ -80,9 +80,13 @@ class Processor : AbstractProcessor() {
                         .initializer("preferences")
                         .build())
                 .addProperties(properties.map {
-                    PropertySpec.builder(it.name, it.propertyType, KModifier.OVERRIDE)
+                    PropertySpec.varBuilder(it.name, it.propertyType, KModifier.OVERRIDE)
                             .getter(FunSpec.getterBuilder()
                                     .addCode("return preferences.get${it.editorTypeName}(%S, ${it.default})\n", it.keyName)
+                                    .build())
+                            .setter(FunSpec.setterBuilder()
+                                    .addParameter("value", it.propertyType)
+                                    .addCode("preferences.edit().put${it.editorTypeName}(%S, value).apply()", it.keyName)
                                     .build())
                             .build()
                 })
@@ -91,7 +95,7 @@ class Processor : AbstractProcessor() {
                         .addParameter("body", LambdaTypeName.get(ClassName("", editorClass.name!!), emptyList(), UNIT))
                         .addCode("val editor = preferences.edit()\n")
                         .addCode("Editor(editor).body()\n")
-                        .addCode("editor.commit()\n")
+                        .addCode("editor.apply()\n")
                         .build())
                 .build()
 

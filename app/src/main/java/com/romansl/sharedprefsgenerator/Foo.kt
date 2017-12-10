@@ -5,26 +5,26 @@ import com.romansl.prefs.*
 @Preferences
 interface Foo {
     @DefaultInt(111)
-    val someInt: Int
+    var someInt: Int
 
     @DefaultLong(222L)
-    val someLong: Long
+    var someLong: Long
 
     @DefaultString("hello")
-    val someHello: String
+    var someHello: String
 
     @Key("replacedKey")
-    val someKey: String
+    var someKey: String
 
-    val someNullable: String?
+    var someNullable: String?
 
     @DefaultBoolean(true)
-    val someBoolean: Boolean
+    var someBoolean: Boolean
     @Key("isReplaced")
-    val isBoolean: Boolean
+    var isBoolean: Boolean
     @Key("hasReplaced")
-    val hasBoolean: Boolean
+    var hasBoolean: Boolean
 
     @DefaultFloat(0.567f)
-    val someFloat: Float
+    var someFloat: Float
 }
