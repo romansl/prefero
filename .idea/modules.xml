@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/SharedPrefsGenerator.iml" filepath="$PROJECT_DIR$/SharedPrefsGenerator.iml" />
-      <module fileurl="file://$PROJECT_DIR$/annotations/annotations.iml" filepath="$PROJECT_DIR$/annotations/annotations.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/generator/generator.iml" filepath="$PROJECT_DIR$/generator/generator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/prefero.iml" filepath="$PROJECT_DIR$/prefero.iml" group="prefero" />
+      <module fileurl="file://$PROJECT_DIR$/annotations/prefero-annotations.iml" filepath="$PROJECT_DIR$/annotations/prefero-annotations.iml" group="prefero/annotations" />
+      <module fileurl="file://$PROJECT_DIR$/app/prefero-app.iml" filepath="$PROJECT_DIR$/app/prefero-app.iml" group="prefero/app" />
+      <module fileurl="file://$PROJECT_DIR$/generator/prefero-generator.iml" filepath="$PROJECT_DIR$/generator/prefero-generator.iml" group="prefero/generator" />
     </modules>
   </component>
 </project>

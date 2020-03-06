@@ -9,7 +9,7 @@ repositories {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    compile 'com.squareup:kotlinpoet:0.6.0'
+    implementation 'com.squareup:kotlinpoet:0.6.0'
     implementation project(':annotations')
 }
 
@@ -17,7 +17,7 @@ sourceCompatibility = "1.8"
 targetCompatibility = "1.8"
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+    archiveClassifier.set('sources')
     from sourceSets.main.allSource
 }
 

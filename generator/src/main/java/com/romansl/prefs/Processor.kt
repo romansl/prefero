@@ -2,7 +2,6 @@ package com.romansl.prefs
 
 import com.squareup.kotlinpoet.*
 import org.jetbrains.annotations.Nullable
-import java.lang.IllegalArgumentException
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
@@ -80,9 +79,18 @@ class Processor : AbstractProcessor() {
                         .initializer("preferences")
                         .build())
                 .addProperties(properties.map {
+                    val ii = if (it.propertyType.nullable) {
+                        ""
+                    } else {
+                        if (it.propertyType == STRING) {
+                            "!!"
+                        } else {
+                            ""
+                        }
+                    }
                     PropertySpec.varBuilder(it.name, it.propertyType, KModifier.OVERRIDE)
                             .getter(FunSpec.getterBuilder()
-                                    .addCode("return preferences.get${it.editorTypeName}(%S, ${it.default})\n", it.keyName)
+                                    .addCode("return preferences.get${it.editorTypeName}(%S, ${it.default})$ii\n", it.keyName)
                                     .build())
                             .setter(FunSpec.setterBuilder()
                                     .addParameter("value", it.propertyType)
