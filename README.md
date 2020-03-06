@@ -1,7 +1,7 @@
 # prefero
 Android SharedPreferences helper code generator for Kotlin.
 
-[![](https://jitpack.io/v/romansl/Promeso.svg)](https://jitpack.io/#romansl/prefero)
+[![](https://jitpack.io/v/romansl/Prefero.svg)](https://jitpack.io/#romansl/prefero)
 
 Usage:
 
@@ -10,8 +10,8 @@ Usage:
 apply plugin: 'kotlin-kapt'
 
 dependencies {
-    compile 'com.github.romansl.prefero:annotations:1.2'
-    kapt 'com.github.romansl.prefero:generator:1.2'
+    compile 'com.github.romansl.prefero:annotations:1.2.1'
+    kapt 'com.github.romansl.prefero:generator:1.2.1'
 }
 ```
 
