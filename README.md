@@ -1,7 +1,7 @@
 # prefero
 Android SharedPreferences helper code generator for Kotlin.
 
-[![](https://jitpack.io/v/romansl/Prefero.svg)](https://jitpack.io/#romansl/prefero)
+[![](https://jitpack.io/v/romansl/prefero.svg)](https://jitpack.io/#romansl/prefero)
 
 Usage:
 
