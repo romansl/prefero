@@ -89,6 +89,7 @@ class Processor : AbstractProcessor() {
                 .build()
 
         val prefsClass = TypeSpec.classBuilder(className)
+                .addOriginatingElement(element)
                 .addSuperinterface(interfaceName)
                 .primaryConstructor(FunSpec.constructorBuilder()
                         .addParameter("preferences", spName)
@@ -122,7 +123,7 @@ class Processor : AbstractProcessor() {
                         .build())
                 .build()
 
-        FileSpec.builder(interfaceName.packageName, interfaceName.simpleName)
+        FileSpec.builder(className.packageName, className.simpleName)
                 .addType(prefsClass)
                 .indent("    ")
                 .build()
