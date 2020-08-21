@@ -4,6 +4,7 @@ import com.romansl.prefs.*
 
 @Preferences
 interface Foo {
+    @Key("SOME_INT")
     @DefaultInt(111)
     var someInt: Int
 
