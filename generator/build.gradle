@@ -3,11 +3,11 @@ apply plugin: 'kotlin'
 apply plugin: 'maven'
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    def kotlinpoet = '1.6.0'
+    def kotlinpoet = '1.8.0'
 
     implementation "com.squareup:kotlinpoet:${kotlinpoet}"
     implementation "com.squareup:kotlinpoet-metadata:${kotlinpoet}"

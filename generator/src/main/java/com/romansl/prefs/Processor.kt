@@ -15,7 +15,7 @@ import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
 @SupportedAnnotationTypes("com.romansl.prefs.Preferences")
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 @OptIn(KotlinPoetMetadataPreview::class)
 class Processor : AbstractProcessor() {
     private lateinit var classInspector: ClassInspector

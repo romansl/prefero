@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SharedPrefsGenerator.iml" filepath="$PROJECT_DIR$/.idea/modules/SharedPrefsGenerator.iml" group="SharedPrefsGenerator" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/annotations/annotations.iml" filepath="$PROJECT_DIR$/.idea/modules/annotations/annotations.iml" group="SharedPrefsGenerator/annotations" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" group="SharedPrefsGenerator/app" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/generator/generator.iml" filepath="$PROJECT_DIR$/.idea/modules/generator/generator.iml" group="SharedPrefsGenerator/generator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SharedPrefsGenerator.iml" filepath="$PROJECT_DIR$/.idea/modules/SharedPrefsGenerator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/annotations/SharedPrefsGenerator.annotations.iml" filepath="$PROJECT_DIR$/.idea/modules/annotations/SharedPrefsGenerator.annotations.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/SharedPrefsGenerator.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/SharedPrefsGenerator.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/generator/SharedPrefsGenerator.generator.iml" filepath="$PROJECT_DIR$/.idea/modules/generator/SharedPrefsGenerator.generator.iml" />
     </modules>
   </component>
 </project>
