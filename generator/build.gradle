@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
     id 'kotlin'
     id 'maven-publish'
 }
@@ -19,19 +19,15 @@ dependencies {
 sourceCompatibility = "1.8"
 targetCompatibility = "1.8"
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    archiveClassifier.set('sources')
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
+java {
+    withSourcesJar()
 }
 
 // To specify a license in the pom:
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            from components.java
             pom {
                 licenses {
                     license {
