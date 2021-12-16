@@ -1,8 +1,8 @@
 package com.romansl.prefs
 
+import com.google.auto.common.MoreElements
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
-import com.squareup.kotlinpoet.classinspector.elements.shaded.com.google.auto.common.MoreElements
 import com.squareup.kotlinpoet.metadata.ImmutableKmProperty
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
