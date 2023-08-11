@@ -1,12 +1,13 @@
 package com.romansl.prefs
 
-import com.google.auto.common.MoreElements
 import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
-import com.squareup.kotlinpoet.metadata.ImmutableKmProperty
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.classinspectors.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
+import com.squareup.kotlinpoet.metadata.toKmClass
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.jvm.syntheticMethodForAnnotations
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
@@ -15,8 +16,8 @@ import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
 @SupportedAnnotationTypes("com.romansl.prefs.Preferences")
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
-@OptIn(KotlinPoetMetadataPreview::class)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
+@OptIn(KotlinPoetMetadataPreview::class, DelicateKotlinPoetApi::class)
 class Processor : AbstractProcessor() {
     private lateinit var classInspector: ClassInspector
     private var hasErrors = false
@@ -35,10 +36,8 @@ class Processor : AbstractProcessor() {
             it as TypeElement
             val kind = it.kind
             if (kind == ElementKind.INTERFACE) {
-                val classSpec = it.toTypeSpec(classInspector)
-
                 if (!hasErrors) {
-                    generateFile(it, classSpec)
+                    generateFile(it)
                 }
             } else {
                 error("The Preferences annotation can only be applied to interfaces.", it)
@@ -48,86 +47,105 @@ class Processor : AbstractProcessor() {
         return true
     }
 
-    private fun generateFile(element: TypeElement, interfaceSpec: TypeSpec) {
-        val packageName = MoreElements.getPackage(element).toString()
-        val interfaceName = ClassName(packageName, interfaceSpec.name!!)
-        val className = ClassName(packageName, "${interfaceSpec.name}Impl")
+    private fun generateFile(element: TypeElement) {
+        val interfaceKmClass = element.toKmClass()
+        val interfaceSpec = interfaceKmClass.toTypeSpec(classInspector)
+        val interfaceName = element.asClassName()
+        val className = ClassName(interfaceName.packageName, "${interfaceSpec.name}Impl")
 
         val innerSyntheticClassElement = element.enclosedElements.firstOrNull {
             it.kind == ElementKind.CLASS && it.simpleName.contentEquals("DefaultImpls")
         }
-        val declarationContainer = classInspector.declarationContainerFor(interfaceName)
 
+        val kmProperties = interfaceKmClass.properties
         val properties = interfaceSpec.propertySpecs.map { propertySpec ->
-            val propertyMetadata = declarationContainer.properties.first {
+            val propertyMetadata = kmProperties.first {
                 it.name == propertySpec.name
             }
             Property(element, innerSyntheticClassElement, propertySpec, propertyMetadata)
         }
 
         val editorClass = TypeSpec.classBuilder("Editor")
-                .addModifiers(KModifier.INNER)
-                .addSuperinterface(interfaceName)
-                .primaryConstructor(FunSpec.constructorBuilder()
-                        .addParameter("editor", spEditor)
-                        .build())
-                .addProperty(PropertySpec.builder("editor", spEditor)
-                        .initializer("editor")
-                        .build())
-                .addProperties(properties.map {
-                    PropertySpec.builder(it.name, it.propertyType, KModifier.OVERRIDE)
-                            .mutable(true)
-                            .getter(FunSpec.getterBuilder()
-                                    .addCode("return this@${className.simpleName}.${it.name}\n")
-                                    .build())
-                            .setter(FunSpec.setterBuilder()
-                                    .addParameter("value", it.propertyType)
-                                    .addCode("editor.put${it.editorTypeName}(%S, value)\n", it.keyName)
-                                    .build())
+            .addModifiers(KModifier.INNER)
+            .addSuperinterface(interfaceName)
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter("editor", spEditor)
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("editor", spEditor)
+                    .initializer("editor")
+                    .build()
+            )
+            .addProperties(properties.map {
+                PropertySpec.builder(it.name, it.propertyType, KModifier.OVERRIDE)
+                    .mutable(true)
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addCode("return this@${className.simpleName}.${it.name}\n")
                             .build()
-                })
-                .build()
+                    )
+                    .setter(
+                        FunSpec.setterBuilder()
+                            .addParameter("value", it.propertyType)
+                            .addCode("editor.put${it.editorTypeName}(%S, value)\n", it.keyName)
+                            .build()
+                    )
+                    .build()
+            })
+            .build()
 
         val prefsClass = TypeSpec.classBuilder(className)
-                .addOriginatingElement(element)
-                .addSuperinterface(interfaceName)
-                .primaryConstructor(FunSpec.constructorBuilder()
-                        .addParameter("preferences", spName)
-                        .build())
-                .addProperty(PropertySpec.builder("preferences", spName)
-                        .initializer("preferences")
-                        .build())
-                .addProperties(properties.map {
-                    val ii = if (it.propertyType.isNullable || it.propertyType != STRING) {
-                        ""
-                    } else {
-                        "!!"
-                    }
-                    PropertySpec.builder(it.name, it.propertyType, KModifier.OVERRIDE)
-                            .mutable(true)
-                            .getter(FunSpec.getterBuilder()
-                                    .addCode("return preferences.get${it.editorTypeName}(%S, ${it.default})$ii\n", it.keyName)
-                                    .build())
-                            .setter(FunSpec.setterBuilder()
-                                    .addParameter("value", it.propertyType)
-                                    .addCode("preferences.edit().put${it.editorTypeName}(%S, value).apply()", it.keyName)
-                                    .build())
+            .addOriginatingElement(element)
+            .addSuperinterface(interfaceName)
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter("preferences", spName)
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("preferences", spName)
+                    .initializer("preferences")
+                    .build()
+            )
+            .addProperties(properties.map {
+                val ii = if (it.propertyType.isNullable || it.propertyType != STRING) {
+                    ""
+                } else {
+                    "!!"
+                }
+                PropertySpec.builder(it.name, it.propertyType, KModifier.OVERRIDE)
+                    .mutable(true)
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addCode("return preferences.get${it.editorTypeName}(%S, ${it.default})$ii\n", it.keyName)
                             .build()
-                })
-                .addType(editorClass)
-                .addFunction(FunSpec.builder("edit")
-                        .addParameter("body", LambdaTypeName.get(ClassName("", editorClass.name!!), emptyList(), UNIT))
-                        .addCode("val editor = preferences.edit()\n")
-                        .addCode("Editor(editor).body()\n")
-                        .addCode("editor.apply()\n")
-                        .build())
-                .build()
+                    )
+                    .setter(
+                        FunSpec.setterBuilder()
+                            .addParameter("value", it.propertyType)
+                            .addCode("preferences.edit().put${it.editorTypeName}(%S, value).apply()", it.keyName)
+                            .build()
+                    )
+                    .build()
+            })
+            .addType(editorClass)
+            .addFunction(
+                FunSpec.builder("edit")
+                    .addParameter("body", LambdaTypeName.get(ClassName("", editorClass.name!!), emptyList(), UNIT))
+                    .addCode("val editor = preferences.edit()\n")
+                    .addCode("Editor(editor).body()\n")
+                    .addCode("editor.apply()\n")
+                    .build()
+            )
+            .build()
 
         FileSpec.builder(className.packageName, className.simpleName)
-                .addType(prefsClass)
-                .indent("    ")
-                .build()
-                .writeTo(processingEnv.filer)
+            .addType(prefsClass)
+            .indent("    ")
+            .build()
+            .writeTo(processingEnv.filer)
     }
 
     private fun error(message: String, element: Element) {
@@ -140,10 +158,11 @@ class Processor : AbstractProcessor() {
     }
 
     private inner class Property(
-            private val propertyElement: Element,
-            private val innerSyntheticClassElement: Element?,
-            propertySpec: PropertySpec,
-            propertyMetadata: ImmutableKmProperty) {
+        private val propertyElement: Element,
+        private val innerSyntheticClassElement: Element?,
+        propertySpec: PropertySpec,
+        propertyMetadata: KmProperty
+    ) {
         /**
          * Суффикс геттеров и сеттеров SharedPreferences.
          */
@@ -163,7 +182,7 @@ class Processor : AbstractProcessor() {
                 // приходится городить такой изврат...
                 // https://github.com/square/kotlinpoet/issues/900
                 val nameToFind = propertyMetadata.syntheticMethodForAnnotations?.name
-                        ?: return@run null
+                    ?: return@run null
                 innerSyntheticClassElement?.enclosedElements?.firstOrNull {
                     it.kind == ElementKind.METHOD && it.simpleName.contentEquals(nameToFind)
                 }
@@ -175,7 +194,7 @@ class Processor : AbstractProcessor() {
 
         private fun <A : Annotation> getAnnotation(annotationType: Class<A>, syntheticPropertyElement: Element?): A? {
             return propertyElement.getAnnotation(annotationType)
-                    ?: syntheticPropertyElement?.getAnnotation(annotationType)
+                ?: syntheticPropertyElement?.getAnnotation(annotationType)
         }
 
         private fun makeKeyName(name: String, syntheticPropertyElement: Element?): String {
@@ -245,4 +264,3 @@ class Processor : AbstractProcessor() {
         private val STRING_NULLABLE = STRING.copy(nullable = true)
     }
 }
-

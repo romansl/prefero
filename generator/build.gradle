@@ -9,17 +9,15 @@ repositories {
 }
 
 dependencies {
-    implementation "com.squareup:kotlinpoet:1.10.2"
-    implementation "com.squareup:kotlinpoet-metadata:1.9.0"
-    implementation "com.squareup:kotlinpoet-metadata-specs:1.9.0"
-    implementation "com.squareup:kotlinpoet-classinspector-elements:1.9.0"
+    implementation "com.squareup:kotlinpoet:1.14.2"
+    implementation 'com.squareup:kotlinpoet-metadata:1.14.2'
     implementation project(':annotations')
 }
 
-sourceCompatibility = "1.8"
-targetCompatibility = "1.8"
-
 java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+
     withSourcesJar()
 }
 
